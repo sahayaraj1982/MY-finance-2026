@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAHAYARAJ-2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root { --p-bg: #0b08d4; --n-col: #ffffff; --out: #000000; }
+        body { background-color: #f1f5f9; font-family: sans-serif; }
+        * { font-weight: 800 !important; }
+        .main-app-box { border: 4px solid var(--out); margin: 10px auto; border-radius: 30px; background: #ffffff; overflow: hidden; max-width: 1300px; }
+        .premium-header { background-color: var(--p-bg); padding: 15px 25px; border-bottom: 4px solid #000; color: white; }
+        .inner-box { border: 3px solid #000; border-radius: 20px; padding: 15px; background: #fff; height: 100%; }
+        .cat-card { border: 3px solid #54301d; border-radius: 15px; text-align: center; padding: 5px; min-width: 120px; }
+        .cat-card p { font-size: 10px; color: #000; text-transform: uppercase; }
+        .cat-card h3 { font-size: 22px; color: #1e40af; }
+        .btn-style { border: 2px solid #000; border-radius: 8px; color: #fff; font-size: 12px; transition: 0.1s; text-transform: uppercase; }
+        .btn-style:active { transform: scale(0.98); }
+        input, select { border: 2px solid #000 !important; border-radius: 5px; padding: 5px; width: 100%; font-size: 14px; }
+        .modal-overlay { background: rgba(0,0,0,0.8); position: fixed; inset: 0; z-index: 100; display: flex; items-center; justify-center; }
+        .glass-card { background: white; width: 95%; max-width: 600px; border-radius: 25px; padding: 20px; border: 5px solid #000; }
+        .login-card { background: white; width: 350px; border-radius: 30px; padding: 30px; border: 6px solid #000; text-align: center; }
+    </style>
+</head>
+<body onload="init()">
+
+<div id="loginScreen" class="modal-overlay">
+    <div class="login-card">
+        <h2 class="text-2xl mb-6 text-blue-800 italic uppercase">Sahayaraj Admin</h2>
+        <div class="flex justify-around mb-6 border-2 border-black p-2 rounded-lg text-[10px]">
+            <label><input type="checkbox" checked disabled> GRAND TOTAL</label>
+            <label><input type="checkbox" checked disabled> CATEGORY</label>
+        </div>
+        <p class="text-left text-xs mb-1">PASSWORD 🔑</p>
+        <input type="password" id="loginPass" class="text-center text-xl mb-6" placeholder="****">
+        <button onclick="checkLogin()" class="w-full bg-blue-600 py-3 rounded-lg text-white btn-style">LOGIN ✅</button>
+    </div>
+</div>
+
+<div id="appPage" class="hidden p-2">
+    <div class="main-app-box mx-auto">
+        <div class="premium-header flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <button class="bg-red-600 w-8 h-8 rounded-full border-2 border-black">⬅</button>
+                <button onclick="document.getElementById('bellDate').showPicker()" class="bg-yellow-400 w-10 h-10 rounded-full border-2 border-black text-xl">🔔</button>
+                <input type="date" id="bellDate" onchange="setStartingDate()" class="absolute opacity-0 pointer-events-none">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 id="dispTitle" class="text-2xl italic uppercase">INDIAN-2026</h1>
+                        <button onclick="openUserSet()" class="text-sm">⚙️</button>
+                    </div>
+                    <p id="startDateDisplay" class="text-[9px] text-yellow-300"></p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-right">
+                    <p class="text-[9px] uppercase">Records: <span id="recCount" class="text-yellow-400">0</span></p>
+                    <h2 id="mainTotal" class="text-3xl">₹0</h2>
+                </div>
+                <button onclick="openAdminSettings()" class="text-3xl">⚙️</button>
+            </div>
+        </div>
+
+        <div class="p-4">
+            <div id="catGrid" class="flex flex-wrap gap-2 mb-6 justify-center"></div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="inner-box">
+                    <h3 class="border-b-2 border-green-600 mb-4 italic text-sm">NEW ENTRY</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="date" id="eDate">
+                        <input type="tel" id="eMob" placeholder="Mobile">
+                        <select id="eCat"></select>
+                        <input type="text" id="eDesc" placeholder="Remark">
+                        <input type="number" id="eAmt" placeholder="Amount">
+                        <select id="eType"><option value="CR">IN (+)</option><option value="DR">OUT (-)</option></select>
+                    </div>
+                    <button id="saveBtn" onclick="saveData()" class="w-full py-4 mt-4 bg-green-600 text-white btn-style text-lg">SAVE ✅</button>
+                </div>
+
+                <div class="inner-box">
+                    <h3 class="border-b-2 border-blue-600 mb-4 italic text-sm">SEARCH & TOOLS</h3>
+                    <div class="grid grid-cols-3 gap-2 mb-4">
+                        <input type="date" id="fDate">
+                        <input type="date" id="tDate">
+                        <input type="tel" id="sMob" placeholder="Mobile">
+                    </div>
+                    <div id="filterArea" class="flex flex-wrap gap-1 mb-4"></div>
+                    <div class="grid grid-cols-3 gap-2 mb-4">
+                        <button onclick="downloadPDF()" class="bg-orange-600 py-2 btn-style">PDF</button>
+                        <button onclick="sendWhatsApp()" class="bg-green-600 py-2 btn-style">WHATSAPP</button>
+                        <button onclick="deleteAll()" class="bg-red-600 py-2 btn-style">DELETE ALL</button>
+                        <button onclick="document.getElementById('impFile').click()" class="bg-blue-500 py-2 btn-style">IMPORT</button>
+                        <button onclick="exportData()" class="bg-purple-600 py-2 btn-style">EXPORT</button>
+                        <input type="file" id="impFile" class="hidden" onchange="importData(event)">
+                    </div>
+                    <button onclick="refresh()" class="w-full bg-slate-800 text-white py-3 btn-style">SEARCH DATA 🔎</button>
+                </div>
+            </div>
+
+            <div class="mt-6 border-4 border-black rounded-xl overflow-hidden">
+                <table class="w-full text-xs">
+                    <thead class="bg-black text-white">
+                        <tr><th class="p-2">DATE</th><th class="p-2">MOBILE</th><th class="p-2">CAT</th><th class="p-2">REMARK</th><th class="p-2 text-right">AMOUNT</th><th class="p-2">ACTION</th></tr>
+                    </thead>
+                    <tbody id="resTable" class="text-center font-bold"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="userSetModal" class="modal-overlay hidden">
+    <div class="glass-card">
+        <h2 class="text-lg mb-4 border-b-2 border-black">USER SETTINGS (NO PASSWORD)</h2>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <p class="text-xs mb-1">Banner Name</p><input type="text" id="uTitle">
+                <p class="text-xs mt-2 mb-1">Banner Color</p><input type="color" id="uHeadCol" class="h-10">
+            </div>
+            <div id="userCatArea" class="space-y-1">
+                <p class="text-xs mb-1">Rename Categories</p>
+            </div>
+        </div>
+        <button onclick="saveUserSet()" class="w-full bg-blue-600 py-3 mt-6 btn-style">APPLY & REFRESH</button>
+        <button onclick="closeModals()" class="w-full mt-2 text-red-600 text-xs">CLOSE</button>
+    </div>
+</div>
+
+<div id="adminModal" class="modal-overlay hidden">
+    <div class="glass-card">
+        <h2 class="text-lg mb-4 border-b-2 border-red-600">ADMIN CONTROL PANEL</h2>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div><span>Admin PIN</span><input type="text" id="setAPin"></div>
+            <div><span>Expiry Date</span><input type="date" id="setExp"></div>
+        </div>
+        <div id="adminCatStatus" class="space-y-1"></div>
+        <button onclick="saveAdminSettings()" class="w-full bg-red-600 py-3 mt-6 btn-style text-white">SAVE SYSTEM CONFIG ✅</button>
+        <button onclick="closeModals()" class="w-full mt-2 text-xs">CANCEL</button>
+    </div>
+</div>
+
+<script>
+let cfg = JSON.parse(localStorage.getItem('saha_v68_cfg')) || {
+    "title":"INDIAN-2026", "headCol":"#0b08d4", "adminPin":"Saha@1982", "loginPin":"2026", "expiryDate":"2026-05-30", "startingDate":"",
+    "cats":["A1","A2","A3","A4","A5","GENERAL"], "catStatus":[true,true,true,true,true,true]
+};
+let db = JSON.parse(localStorage.getItem('saha_v68_db')) || [];
+let currentFilter = "ALL";
+
+function init() {
+    document.documentElement.style.setProperty('--p-bg', cfg.headCol);
+    document.getElementById('dispTitle').innerText = cfg.title;
+    
+    let today = new Date().toISOString().split('T')[0];
+    if(today > cfg.expiryDate) {
+        let b = document.getElementById('saveBtn');
+        b.innerText = "UPDATE REQUIRED ❌"; b.onclick = () => alert("Expired! Contact Admin.");
+    }
+
+    renderUI();
+    refresh();
+}
+
+function checkLogin() {
+    if(document.getElementById('loginPass').value === cfg.loginPin) {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('appPage').classList.remove('hidden');
+    } else { alert("Incorrect!"); }
+}
+
+function renderUI() {
+    const grid = document.getElementById('catGrid'), eSel = document.getElementById('eCat'), fA = document.getElementById('filterArea');
+    grid.innerHTML = ""; eSel.innerHTML = ""; 
+    fA.innerHTML = `<button onclick="setF('ALL')" class="bg-red-500 text-white px-3 py-1 btn-style">ALL</button>`;
+    
+    cfg.cats.forEach((c, i) => {
+        if(cfg.catStatus[i]) {
+            grid.innerHTML += `<div class="cat-card"><p>${c}</p><h3>₹<span id="sum_${c}">0</span></h3></div>`;
+            eSel.innerHTML += `<option value="${c}">${c}</option>`;
+            fA.innerHTML += `<button onclick="setF('${c}')" class="bg-blue-900 text-white px-3 py-1 btn-style">${c}</button>`;
+        }
+    });
+}
+
+function refresh() {
+    const fD = document.getElementById('fDate').value, tD = document.getElementById('tDate').value, sM = document.getElementById('sMob').value;
+    let html = "", grand = 0, sums = {}; cfg.cats.forEach(c => sums[c] = 0);
+
+    db.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    let filtered = db.filter(t => {
+        let mDate = (!fD || t.date >= fD) && (!tD || t.date <= tD);
+        let mBell = !cfg.startingDate || t.date >= cfg.startingDate;
+        let mCat = currentFilter === "ALL" || t.cat === currentFilter;
+        let mMob = !sM || t.mob.includes(sM);
+        return mDate && mBell && mCat && mMob;
+    });
+
+    filtered.forEach(t => {
+        let v = (t.type === "CR") ? parseFloat(t.amt) : -parseFloat(t.amt);
+        sums[t.cat] = (sums[t.cat] || 0) + v;
+        grand += v;
+        html += `<tr class="border-b">
+            <td class="p-2">${t.date.split('-').reverse().join('/')}</td>
+            <td class="p-2">${t.mob}</td>
+            <td class="p-2">${t.cat}</td>
+            <td class="p-2 text-blue-700">${t.desc}</td>
+            <td class="p-2 text-right ${t.type==='CR'?'text-green-600':'text-red-600'}">₹${t.amt}</td>
+            <td class="p-2 flex gap-2 justify-center">
+                <button onclick="edit(${t.id})">🖋️</button>
+                <button onclick="del(${t.id})">❌</button>
+            </td>
+        </tr>`;
+    });
+    document.getElementById('resTable').innerHTML = html;
+    document.getElementById('mainTotal').innerText = "₹" + grand.toLocaleString();
+    document.getElementById('recCount').innerText = filtered.length;
+    cfg.cats.forEach(c => { if(document.getElementById('sum_'+c)) document.getElementById('sum_'+c).innerText = (sums[c] || 0).toLocaleString(); });
+    if(cfg.startingDate) document.getElementById('startDateDisplay').innerText = "From: " + cfg.startingDate.split('-').reverse().join('/');
+}
+
+function saveData() {
+    let d = document.getElementById('eDate').value, a = document.getElementById('eAmt').value;
+    if(!d || !a) return alert("Date & Amount missing!");
+    db.push({id:Date.now(), date:d, mob:document.getElementById('eMob').value||'-', cat:document.getElementById('eCat').value, desc:document.getElementById('eDesc').value||'-', amt:a, type:document.getElementById('eType').value});
+    localStorage.setItem('saha_v68_db', JSON.stringify(db));
+    refresh();
+}
+
+function openUserSet() {
+    document.getElementById('userSetModal').classList.remove('hidden');
+    document.getElementById('uTitle').value = cfg.title;
+    document.getElementById('uHeadCol').value = cfg.headCol;
+    let area = document.getElementById('userCatArea');
+    area.innerHTML = "<p class='text-xs mb-1'>Rename Categories</p>";
+    cfg.cats.forEach((c, i) => {
+        area.innerHTML += `<input type="text" id="ucn_${i}" value="${c}" class="uppercase text-[10px] mb-1">`;
+    });
+}
+
+function saveUserSet() {
+    cfg.title = document.getElementById('uTitle').value.toUpperCase();
+    cfg.headCol = document.getElementById('uHeadCol').value;
+    cfg.cats.forEach((_, i) => { cfg.cats[i] = document.getElementById('ucn_'+i).value.toUpperCase(); });
+    localStorage.setItem('saha_v68_cfg', JSON.stringify(cfg));
+    location.reload();
+}
+
+function openAdminSettings() {
+    if(prompt("ADMIN PIN:") === cfg.adminPin) {
+        document.getElementById('adminModal').classList.remove('hidden');
+        document.getElementById('setExp').value = cfg.expiryDate;
+        document.getElementById('setAPin').value = cfg.adminPin;
+        let area = document.getElementById('adminCatStatus'); area.innerHTML = "<p class='text-xs'>Show/Hide Categories</p>";
+        cfg.cats.forEach((c, i) => {
+            area.innerHTML += `<div class='flex justify-between items-center bg-gray-100 p-1'><span>${c}</span><input type="checkbox" id="acs_${i}" ${cfg.catStatus[i]?'checked':''}></div>`;
+        });
+    }
+}
+
+function saveAdminSettings() {
+    cfg.expiryDate = document.getElementById('setExp').value;
+    cfg.adminPin = document.getElementById('setAPin').value;
+    cfg.cats.forEach((_, i) => { cfg.catStatus[i] = document.getElementById('acs_'+i).checked; });
+    localStorage.setItem('saha_v68_cfg', JSON.stringify(cfg));
+    location.reload();
+}
+
+function downloadPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.text(cfg.title + " Report", 14, 15);
+    doc.autoTable({ 
+        head: [['DATE', 'MOBILE', 'CAT', 'REMARK', 'AMOUNT']], 
+        body: db.map(t => [t.date.split('-').reverse().join('/'), t.mob, t.cat, t.desc, t.amt]),
+        startY: 20 
+    });
+    doc.save(cfg.title + ".pdf");
+}
+
+function setF(c) { currentFilter = c; refresh(); }
+function setStartingDate() { cfg.startingDate = document.getElementById('bellDate').value; refresh(); }
+function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.id !== 'loginScreen' && m.classList.add('hidden')); }
+function del(id) { if(confirm("நீக்கலாமா?")) { db = db.filter(x => x.id !== id); localStorage.setItem('saha_v68_db', JSON.stringify(db)); refresh(); } }
+function deleteAll() { if(confirm("அனைத்தையும் நீக்கவா?")) { db = []; localStorage.setItem('saha_v68_db', JSON.stringify(db)); refresh(); } }
+function exportData() { window.open("data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db))); }
+function importData(e) {
+    const reader = new FileReader();
+    reader.onload = (x) => { db = JSON.parse(x.target.result); localStorage.setItem('saha_v68_db', JSON.stringify(db)); refresh(); };
+    reader.readAsText(e.target.files[0]);
+}
+function sendWhatsApp() { window.open(`https://wa.me/?text=${encodeURIComponent(cfg.title + " Total: " + document.getElementById('mainTotal').innerText)}`); }
+</script>
+</body>
+</html>
